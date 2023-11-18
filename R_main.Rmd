@@ -1,0 +1,385 @@
+---
+title: "SCC.461 Final Assignment"
+author: "36335776"
+date: "12-01-2023"
+output: 
+  bookdown::pdf_document2:
+    toc: false
+bibliography: python+R.bib
+classoption: a4paper
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+
+```{r, echo=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo=FALSE) # no need to include R code in the pdf file, although the R code is still needed in THIS file
+## load your libraries here
+
+library(dplyr)
+library(pROC)
+library(ggplot2)
+require(reshape2)
+```
+
+# **Abstract:**
+
+In this project, there are two main ways through which we implement
+decision trees: from scratch and with a library like scikit-learn, in
+our implementation, we have incorporated 2 different criteria i.e. Gini
+index and entropy for attribute selections, and have added a function to
+handle missing values. After implementation, we used 2 different
+datasets and compared the results like model accuracy, F1, recall,
+precision, and time taken by the two decision tree models. We used the
+results in R to analyze the two models' results. For comparison of the 2
+models, we applied tests like the paired T-test, Friedman test, and
+McNemar's test. Also, confusion matrix, ROC Curve, and the AUC score
+were used during the analysis and evaluation of the two models . Then
+the final results are given on the basis of the analysis and concluded
+how our implementation from scratch performed against the scikit-learn
+library.
+
+# **Introduction:**
+
+We have developed a Decision Tree algorithm from scratch and compared it
+with the existing implementation of the scikit-learn library of Python[@scikitlearn_2019_sklearntreedecisiontreeclassifier].
+First of all, what is a Decision Tree,[@scikitlearn_2019_sklearntreedecisiontreeclassifier]
+A decision tree is a type of algorithm that is used for both classification and
+regression tasks. It is a tree-like model of decisions and their possible consequences, where
+an internal node represents a feature, a branch represents a decision,
+and each leaf node represents an outcome. The top node in a decision
+tree is known as the root node. Decision trees operate by selecting the
+feature that splits the data most efficiently and creating new inner
+nodes for each feature. The process continues until a stopping criterion
+is met.
+
+Due to their simplicity, minimal data preparation requirements, and
+ability to handle both numerical and categorical data, decision trees
+are frequently utilized in a variety of industries, including banking,
+healthcare, marketing, etc[@what].
+
+For the implementation of the Decision Tree, Gini and Entropy[@dash_2022_decision] have been
+used as two different criteria for the splitting of the nodes in the
+decision tree. We have included hyperparameters like max-depth and
+min-size which are used to control a decision tree from overfitting or
+underfitting on the training data which are also used as a stopping
+criterion. We have also included a function to handle if there are any
+missing values in a dataset. In addition, we tested our model with the
+Pytest file. We examined the different functions of the class, as well
+as compared them to real values, to see how well they work.[@python]
+
+For the performance of the two models various metrics such as accuracy,
+precision, recall, and F1-score and time taken to train them were taken
+from 3 different data sets and stored and analyzed in R where
+statistical tests were used to compare the performance of the two
+models. These tests are used to determine how the decision tree
+implementation is working as compared to the scikit-learn library.
+
+In R, we have plotted the different accuracy, precision, recall, and
+F1-score and time of the two models at different max depths and
+different min sample splits to visually represent the results of the two
+models. Further, to compare the performance of the two models, a paired
+T-test, Friedman test, and McNemar's test was used. Also, methods such
+as the confusion matrix, ROC Curve, and the AUC score are used to fully
+evaluate the performance of our model against the sci-kit learn library.
+
+# **Methodology:**
+
+## **Working of the Implemented Algorithm:**
+
+**DecisionTree Class** [@a2021_how]is defined with a constructor that takes several
+parameters:
+
+-   **Max_depth**: The maximum depth of the tree. A tree with max_depth
+    = 2 means it can have at most 2 levels (i.e., 2 decisions).
+
+-   **Min_size**: The minimum number of samples required to split an
+    internal node.
+
+-   **Missing_values**: The method used to handle missing values in the
+    data. The default value is 'median', which replaces missing values
+    with the median of the features.
+
+-   **Criterion**: this determines the criteria to be used for splitting
+    the tree. It has two options: '**entropy**' and '**gini**'
+
+**Next, let's talk about the main function of our Decision Tree and
+their working:**
+
+-   The **handle_missing_values** method is used to handle missing
+    values in the dataset. For this implementation the 'missing_values'
+    parameter is set to 'median'. This replaces missing values with the
+    median of the features and we are using numpy's nanmedian for
+    getting the median which ignores any nan (missing) values if there
+    are any while calculating the median.
+
+-   The **entropy** method calculates the entropy of a split dataset.
+    Entropy is a measure of impurity in a set of examples. The entropy
+    is 0 if all the examples have the same class label, and 1 if the
+    examples have 50% of one class and 50% of another class. In this
+    implementation, the entropy is calculated as the sum of the
+    probability of each class multiplied by the log of the probability
+    of the same class. $$ E = - \sum_{i=1}^{C} p(i)*log_2p(i) $$
+
+-   The **gini** method calculates the Gini index of a split dataset.
+    The Gini index is another measure of impurity in a set of examples.
+    The Gini index is 0 if all the examples have the same class label,
+    and 1 if the examples have 50% of one class and 50% of another
+    class. In this implementation, the Gini index is calculated as the
+    sum of the product of the probability of each class with the
+    probability of the other classes.
+    $$ G =  \sum_{i=1}^{C} p(i)*(1-p(i)) $$
+
+-   The **test_split** method splits a dataset based on attribute
+    values. It returns two lists of rows, left and right, where left
+    contains the rows with attribute values less than the given value,
+    and right contains the rows with attribute values greater than or
+    equal to the given value.
+
+-   The **get_split** method selects the most optimal split point for a
+    dataset by iterating over all features and all possible attribute
+    values for each feature. It then calculates the score of the split
+    using either the Entropy or Gini method depending on the value
+    passed to the criterion parameter. The feature and attribute value
+    with the best score is returned as a dictionary with keys 'index'
+    (the index of the feature), 'value' (the attribute value used for
+    the split), 'groups' (the left and right groups obtained from the
+    split).
+
+-   The **to_terminal** method returns the most common output value in a
+    group.
+
+-   The **split** method creates child splits for a node or makes it
+    terminal. It first checks for the no split, max depth and min size
+    conditions, and returns the terminal node accordingly. If none of
+    these conditions are met, it calls the **get_split** method to get
+    the splits for left and right children.
+
+-   The **fit** method builds the decision tree by first pre-processing
+    the data i.e. it checks for missing values by sending the data to
+    **handling_missing_values** function, then getting the initial split
+    using **get_split** method and finally calling split method to
+    create child splits recursively.
+
+-   The **predict** method makes a prediction with the decision tree by
+    calling the **make_prediction** method.
+
+-   The **make_prediction** method traverses the tree recursively by
+    comparing the feature value of the input sample with the split value
+    at the current node. If the value is less than the split value, it
+    goes to the left child, otherwise it moves to the right child. It
+    continues this process until it reaches a terminal node, which
+    returns the predicted class label.
+
+## **Testing:**
+
+In order to check our implementation we created a list of tests that our
+implementation can handle. We did this in a pytest file and then we
+generated a TXT file with the results for each of the tests.
+
+## **Steps Taken throughout the Project:**
+
+-   Our approach was to take 2 different datasets from UCI's machine
+    learning repository. one was already cleaned so there was no need
+    for pre-processing but one dataset had missing values[@how] to check our 
+    implementation of the function but as sci-kit learn does not support 
+    missing values we had to do a bit of pre processing for the sci-kit learn 
+    implementation part[@a2020_replacing]. The labels were then separated from the dataset
+    if required.[@uci]
+
+-   Further we used train_test_split of sci-kit learn to split the
+    dataset into training and testing data using 80% as train and 20% as
+    test data (test_size 0.20).
+
+-   Now on this we trained our 2 models (our implementation of decision
+    tree and scikit-learn) on the same train data, and then tested their
+    performance using the test data we got from the train_test_split.
+
+-   To evaluate the performance of the two models we used metrics such
+    as accuracy, precision, recall, F1-score and time taken for training
+    of models which we got using the sci-kit learn library and time
+    library.
+
+-   These values were saved in a CSV file. Then, they were imported into
+    R where we then plotted different graphs to display the different
+    results we got for the two models.
+
+-   Then to compare the performance of the models we used a wilcoxson test[@unpaired], and 
+    bootstrap test[@quickr] to determine if there is a significant difference in the 
+    performance of the two model results.
+
+-   We have also visualized performance using other methods such as the
+    ROC curve[@blogger_2016_calculating], and the AUC score.
+
+-   This enables us to fully evaluate the performance of the classifiers
+    and conclude how our implementation performed against the scikit
+    learn library.
+
+# **Results:**
+
+## **1st Dataset ("Haberman's Survival") from UCI**
+
+### Results of the 2 models and Analysis for the 2 models : 
+
+Bootstrap test is a resampling technique used to estimate the sampling 
+distribution of an estimator, while Wilcoxon test is a non-parametric 
+alternative to t-test. Together, these techniques are effective tools for 
+dealing with small samples and unidentified population distributions.
+
+```{r, fig.cap="haberman df Accuracy graph of 2 models", out.width="80%", fig.align = "center",fig.height=2, message = FALSE}
+
+df_haberman_results = read.csv("Results_Haberman.csv")
+
+ggplot(df_haberman_results, aes(max_depth)) + 
+  geom_line(aes(y = accuracy_dt, colour = "DT")) + 
+  geom_line(aes(y = accuracy_skdt, colour = "SKDT"))
+
+ggplot(df_haberman_results, aes(max_depth)) + 
+  geom_line(aes(y = time_taken_dt, colour = "DT")) + 
+  geom_line(aes(y = time_taken_skdt, colour = "SKDT"))
+
+data_haberman_results <- melt(df_haberman_results)
+
+data_haberman_results <- data_haberman_results[!(data_haberman_results$variable=="max_depth"),]
+data_haberman_results <- data_haberman_results[!(data_haberman_results$variable=="time_taken_dt"),]
+data_haberman_results <- data_haberman_results[!(data_haberman_results$variable=="time_taken_skdt"),]
+
+ggplot(data_haberman_results, aes(x=variable, y=value)) + 
+geom_boxplot(aes(fill=variable))
+
+```
+
+
+
+
+```{r, fig.cap="haberman dt analysis roc curves", out.width="80%", fig.align = "center",fig.height=2, warning = FALSE}
+df_haberman = read.csv("Predictions_Haberman.csv",row.names = c("true", "DT", "SKDT"))
+
+roc_dt_df1 <- roc(unlist(df_haberman[1,]) ~ unlist(df_haberman[2,]), plot = TRUE, print.auc= TRUE)
+
+roc_skdt_df1 <- roc(unlist(df_haberman[1,]) ~ unlist(df_haberman[3,]), plot = TRUE, print.auc= TRUE)
+
+wilcox.test(unlist(df_haberman[2,]) ~ unlist(df_haberman[3,]))
+
+roc.test(roc_dt_df1, roc_skdt_df1, method=c("bootstrap"))
+```
+
+
+
+
+
+## **2nd Dataset "Mammographic Mass" from UCI**
+
+
+### Results of the 2 models and Analysis for the 2 models : :
+
+```{r, fig.cap="Mammographic df Accuracy graph of 2 models ", out.width="80%", fig.align = "center", fig.height=2, message = FALSE}
+
+df_mammographic_results = read.csv("Results_mammographic.csv")
+
+ggplot(df_mammographic_results, aes(min_sample_split)) + 
+  geom_line(aes(y = accuracy_dt, colour = "DT")) + 
+  geom_line(aes(y = accuracy_skdt, colour = "SKDT"))
+
+ggplot(df_mammographic_results, aes(min_sample_split)) + 
+  geom_line(aes(y = time_taken_dt, colour = "DT")) + 
+  geom_line(aes(y = time_taken_skdt, colour = "SKDT"))
+
+data_mammographic_results <- melt(df_mammographic_results)
+
+data_mammographic_results<-data_mammographic_results[!(data_mammographic_results$variable=="min_sample_split"),]
+data_mammographic_results <- data_mammographic_results[!(data_mammographic_results$variable=="time_taken_dt"),]
+data_mammographic_results <-data_mammographic_results[!(data_mammographic_results$variable=="time_taken_skdt"),]
+
+
+ggplot(df_mammographic_results, aes(min_sample_split)) + 
+  geom_line(aes(y = accuracy_dt, colour = "accuracy_dt")) + 
+  geom_line(aes(y = f1_dt, colour = "f1_dt")) +            
+  geom_line(aes(y = recall_dt, colour = "recall_dt")) +            
+  geom_line(aes(y = precision_dt, colour = "precision_dt")) +            
+  geom_line(aes(y = accuracy_skdt, colour = "accuracy_skdt")) + 
+  geom_line(aes(y = f1_skdt, colour = "f1_skdt"))+            
+  geom_line(aes(y = recall_skdt, colour = "recall_skdt")) +            
+  geom_line(aes(y = precision_skdt, colour = "precision_skdt"))
+
+```
+
+
+
+
+
+```{r, fig.cap="Mammographic dt analysis roc curvess", out.width="80%", fig.align = "center",fig.height=2, warning = FALSE}
+
+df_mammographic = read.csv("Predictions_mammographic.csv" ,row.names = c("true", "DT", "SKDT"))
+
+roc_dt_df2 <- roc(unlist(df_mammographic[1,]) ~ unlist(df_mammographic[2,]), plot = TRUE, print.auc= TRUE)
+
+roc_skdt_df2 <- roc(unlist(df_mammographic[1,]) ~ unlist(df_mammographic[3,]), plot = TRUE, print.auc= TRUE)
+
+wilcox.test(unlist(df_mammographic[2,]) ~ unlist(df_mammographic[3,]))
+
+roc.test(roc_dt_df2, roc_skdt_df2, method=c("bootstrap"))
+```
+
+
+# Discussion: 
+
+In this project, a decision tree is implemented from scratch by using only NumPy
+for scientific calculations where 2 attribute selection methods are utilized for
+finding the best split points which are the Gini index and Entropy. Handling 
+missing value functionality is also added where missing values are replaced by 
+the median of each row. Statistical analysis is done in R to analyze the 
+results of the own implemented model and sklearn implementation. ROC curves and 
+AUC scores are used to represent the performance of 2 corresponding models. 
+Statistical analysis tests, which are Wilcoxon paired test and bootstrap tests 
+are performed to compare the two models' performance. For analysis in R, 
+intermediate CSV files are created by using python code where those files 
+contain predicted values for test datasets and measures for hyperparameter 
+tuning. Two datasets are utilized which are Haberman and Mammographic masses 
+from UCI. From the results section, it can be said that there is no large 
+difference between the accuracies of the two models, however, there is a big 
+difference in the time complexity of the models' performance. The line graphs
+are also plotted to represent how model classification metrics are changed by 
+hyperparameters and the time diffrent plot between the two models. Moreover, 
+the pytest framework is also used to testify functionalities of my own 
+implementation to show how the model can handle various types of datasets.
+
+
+# Conclusion:
+
+Our implementation is used to test 2 datasets, which are called Haberman and 
+Mammographic masses, moreover, statistical analysis techniques are performed on 
+the results of our implementation and sklearn implementation. In R, accuracy 
+measures for varying max_depth values are plotted for two corresponding 
+classifiers and time values are also plotted based on training with those 
+max_depth values. We can say that there was no significant difference between 
+the performance of classifiers but from the point of time complexity, sklearn
+performed significantly better than our model. It has also performed two 
+hypothesis testing methods on the results of classifiers, where the Wilcoxon 
+test and Bootstrap method for AUC values. For the Haberman dataset, the p-value 
+for the Wilcoxon test was 0.003 which is less than 0.05 and we can say that 
+there was no significant difference between the classifiers' predictions. The 
+bootstrap p-value for the Haberman dataset was 0.1611 and we can conclude that 
+again there was no significant difference between the performance of 
+classifiers. 
+
+For the Mammographic masses dataset, the Wilcoxon test showed a very small 
+p-value and we can say that there is no significant difference between the 
+predictions of models, for the bootstrap test, the p-value is 0.8921 which is 
+very high and we can conclude that the two classifiers performed similarly. 
+ROC curves and AUC values are also plotted to get an idea about the performance
+of each classifier. All the classification metrics are described with line 
+graphs for the Mammographic dataset too and again there was a substantial 
+difference between the time complexity of corresponding models.
+
+# Acknowledgements:
+
+I would like to thank Agil , Akanksha for helping me during the analysis of r 
+and solving my errors and finding diffrent ways in the pytest file and
+python code.
+
+# Bibliography:
+
+
+
