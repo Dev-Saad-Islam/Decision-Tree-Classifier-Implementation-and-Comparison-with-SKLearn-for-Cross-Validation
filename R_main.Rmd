@@ -1,5 +1,5 @@
 ---
-title: "SCC.461 Final Assignment"
+title: "Decision-Tree-Classifier-Implementation-and-Comparison-with-SKLearn"
 author: "36335776"
 date: "12-01-2023"
 output: 
